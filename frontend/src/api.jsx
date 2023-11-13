@@ -1,9 +1,11 @@
 import React from 'react';
-
-export function Register () {
+import { useNavigate } from 'react-router-dom';
+export const Register = (props) => {
+  console.log(props);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [name, setName] = React.useState('')
+  const navigate = useNavigate()
   const register = async () => {
     console.log(email, name, password);
     const response = await fetch('http://localhost:5005/user/auth/register', {
@@ -20,29 +22,32 @@ export function Register () {
       alert(data.error);
     } else if (data.token) {
       localStorage.setItem('token', data.token);
+      props.setToken(data.token);
+      navigate('/dashboard');
     }
     console.log(data);
   }
   return (
-  <>
-  <h2>Register</h2>
-  Email:
-  <div/>
-  <input type='text' value = {email} onChange = {e => { setEmail(e.target.value) }}/><br />
-  Password:
-  <div/>
-  <input type='password' value = {password} onChange = {e => { setPassword(e.target.value) }}/><br />
-  Name:
-  <div/>
-  <input type='text' value = {name} onChange = {e => { setName(e.target.value) }}/><br />
-  <button type='button' onClick={register}>Register</button>
-  </>
+    <>
+    <h2>Register</h2>
+    Email:
+    <div/>
+    <input type='text' value = {email} onChange = {e => { setEmail(e.target.value) }}/><br />
+    Password:
+    <div/>
+    <input type='password' value = {password} onChange = {e => { setPassword(e.target.value) }}/><br />
+    Name:
+    <div/>
+    <input type='text' value = {name} onChange = {e => { setName(e.target.value) }}/><br />
+    <button type='button' onClick={register}>Register</button>
+    </>
   )
 }
 
-export function Login () {
+export const Login = (props) => {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const navigate = useNavigate()
   const login = async () => {
     console.log(email, password);
     const response = await fetch('http://localhost:5005/user/auth/login', {
@@ -59,19 +64,28 @@ export function Login () {
       alert(data.error);
     } else if (data.token) {
       localStorage.setItem('token', data.token);
+      props.setToken(data.token);
+      navigate('/dashboard');
     }
     console.log(data);
   }
   return (
-  <>
-  <h2>Login</h2>
-  Email:
-  <div/>
-    <input type='text' value = {email} onChange = {e => { setEmail(e.target.value) }}/><br />
-  Password:
-  <div/>
-    <input type='password' value = {password} onChange = {e => { setPassword(e.target.value) }}/><br />
-  <button type='button' onClick={login}>Login</button>
-  </>
+    <>
+    <h2>Login</h2>
+    Email:
+    <div/>
+      <input type='text' value = {email} onChange = {e => { setEmail(e.target.value) }}/><br />
+    Password:
+    <div/>
+      <input type='password' value = {password} onChange = {e => { setPassword(e.target.value) }}/><br />
+    <button type='button' onClick={login}>Login</button>
+    </>
+  )
+}
+
+export const Dashboard = () => {
+  return (
+    <>
+    </>
   )
 }
