@@ -1,19 +1,23 @@
 import React from 'react';
-import { Login, Register } from './api';
-import { BrowserRouter as Routes, Route, Link } from 'react-router-dom';
+import { Login, Register, Dashboard, Footer } from './api';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 
-const LandingPage = () => {
-  return <></>;
-}
-
-export const PageList = () => {
+const PageList = () => {
   const [token, setToken] = React.useState(null);
+  const navigate = useNavigate();
+  const logout = () => {
+    setToken(null);
+    localStorage.removeItem('token');
+    navigate('/login');
+  }
   return (
     <>
       {token
         ? (
           <>
           <Link to='/dashboard'>Dashboard</Link>
+          {'\u00A0'}|{'\u00A0'}
+          <a href='#' onClick={logout}>Logout</a>
           </>
           )
         : (
@@ -24,15 +28,16 @@ export const PageList = () => {
         </>
           )
       }
+      <hr />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<Register token = {token} setToken = {setToken}/>} />
         <Route path="/login" element={<Login token = {token} setToken = {setToken}/>} />
+        <Route path="/dashboard" element={<Dashboard token = {token} setToken = {setToken}/>} />
       </Routes>
 
     <hr/>
-    <small>Airbrb 2023 ©</small>
+    <Footer />
     </>
-
   );
 }
+export default PageList;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { PageList } from './PageList';
+import PageList from './PageList';
 const App = () => {
   return (
     <>
