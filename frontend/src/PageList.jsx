@@ -1,7 +1,14 @@
 import React from 'react';
-import { Login, Register, Dashboard, Footer } from './api';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
+import Login from './components/Login';
+import Register from './components/Register';
+import Dashboard from './components/Dashboard';
+import AllListings from './components/AllListings';
+import HostedListings from './components/HostedListings';
+import EditHostedListings from './components/EditHostedListings';
+import CreateHostedListings from './components/CreateHostedListings';
+import Footer from './components/Footer'
 
 const PageList = () => {
   const [token, setToken] = React.useState(null);
@@ -34,6 +41,11 @@ const PageList = () => {
         <Route path="/register" element={<Register token = {token} setToken = {setToken}/>} />
         <Route path="/login" element={<Login token = {token} setToken = {setToken}/>} />
         <Route path="/dashboard" element={<Dashboard token = {token} setToken = {setToken}/>} />
+        <Route path="/all-listings" element={<AllListings token = {token} setToken = {setToken}/>} />
+        <Route path="/hosted-listings" element={<HostedListings token = {token} setToken = {setToken}/>}>
+        </Route>
+          <Route path="/edit-listing" element={<EditHostedListings token = {token} setToken = {setToken}/>} />
+          <Route path="/create-listing" element={<CreateHostedListings token = {token} setToken = {setToken}/>} />
       </Routes>
 
     <hr/>
