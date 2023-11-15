@@ -29,7 +29,7 @@ const PageList = () => {
       setToken(null);
       localStorage.removeItem('token');
       localStorage.removeItem('email');
-      navigate('/login');
+      navigate('/');
     }
   }
   return (
@@ -54,7 +54,7 @@ const PageList = () => {
         <Route path="/register" element={<Register token = {token} setToken = {setToken}/>} />
         <Route path="/login" element={<Login token = {token} setToken = {setToken}/>} />
         <Route path="/dashboard" element={<Dashboard token = {token} setToken = {setToken}/>} />
-        <Route path="/all-listings" element={<AllListings token = {token} setToken = {setToken}/>} />
+        <Route path="/" element={<AllListings/>} />
         <Route path="/hosted-listings" element={<HostedListings token = {token} setToken = {setToken}/>} />
         <Route path="/edit-listing" element={<EditHostedListings token = {token} setToken = {setToken}/>} />
         <Route path="/create-listing" element={<CreateHostedListings token = {token} setToken = {setToken}/>} />

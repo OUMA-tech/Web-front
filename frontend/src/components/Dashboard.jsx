@@ -6,13 +6,13 @@ export const Dashboard = (props) => {
   const navigate = useNavigate()
   React.useEffect(() => {
     if (!props.token) {
-      navigate('/login');
+      navigate('/');
     }
   }, [props.token, navigate]);
   return (
     <>
       Dashboard! <br />
-      <Button color="primary" onClick={() => navigate('/all-listings')}>All Listings</Button>
+      <Button color="primary" onClick={() => navigate('/')}>All Listings</Button>
       {'\u00A0'}|{'\u00A0'}
       <Button color="primary" onClick={() => navigate('/hosted-listings')}>Hosted Listings</Button>
     </>

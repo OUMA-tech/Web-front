@@ -34,10 +34,12 @@ const Register = (props) => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('email', data.email);
       props.setToken(data.token);
+      console.log('register success!')
       navigate('/dashboard');
     }
     console.log(data);
   }
+
   return (
     <Box
     component="form"

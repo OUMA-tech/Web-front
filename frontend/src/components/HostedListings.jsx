@@ -10,7 +10,7 @@ export const HostedListings = (props) => {
   const navigate = useNavigate()
   React.useEffect(() => {
     if (!props.token) {
-      navigate('/login');
+      navigate('/');
     }
   }, [props.token, navigate]);
   const [listings, setListings] = React.useState([]);
@@ -83,7 +83,7 @@ export const HostedListings = (props) => {
   };
 
   // styles used for date
-  const useStyles = makeStyles((theme) => ({
+  const dateStyles = makeStyles((theme) => ({
     container: {
       display: 'flex',
       flexWrap: 'wrap',
@@ -94,7 +94,7 @@ export const HostedListings = (props) => {
       width: 200,
     },
   }));
-  const classes = useStyles();
+  const classes = dateStyles();
 
   // delete a listing
   const deleteLisitng = async (listing) => {
@@ -152,8 +152,14 @@ export const HostedListings = (props) => {
           ? <p>No listings available</p>
           : listings.map((listing) => (
               <div key={listing.id}>
-                <h2>{listing.title}</h2>
+                <hr />
+                <h2>Title {listing.title}</h2>
+                <p>Property type {}</p>
+                <p>🛏️ {}</p>
+                <p>🛀 {}</p>
                 <img src={listing.thumbnail} alt={listing.title} />
+                <p>SVG rating{}</p>
+                <p>Number of reviews</p>
                 <p>Price: ${listing.price}</p>
                 <div>{listing.reviews}</div>
                 <ButtonGroup variant="text" color="primary" aria-label="text primary button group">
@@ -161,7 +167,7 @@ export const HostedListings = (props) => {
                 <Button color="secondary" onClick={() => deleteLisitng(listing)}>Delete</Button>
                 </ButtonGroup>
                 <div>
-                  <form className={classes.container} noValidate style={{ marginTop: '1vh' }}>
+                  <form className={classes.container} noValidate style={{ marginTop: '2vh' }}>
                     <TextField
                       id = "date"
                       label = "StartDate"
@@ -174,7 +180,7 @@ export const HostedListings = (props) => {
                       }}
                     />
                   </form>
-                  <form className={classes.container} noValidate style={{ marginTop: '1vh' }}>
+                  <form className={classes.container} noValidate style={{ marginTop: '2vh' }}>
                     <TextField
                       id="date"
                       label="EndDate"
