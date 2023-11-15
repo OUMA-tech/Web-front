@@ -35,7 +35,7 @@ export const Login = (props) => {
     <Box
     component="form"
     sx={{
-      '& .MuiTextField-root': { m: 1, width: '25ch' },
+      '& .MuiTextField-root': { m: 1, width: '30ch' },
     }}
     noValidate
     autoComplete="off"

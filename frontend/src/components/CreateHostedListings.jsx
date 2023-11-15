@@ -38,6 +38,7 @@ export const CreateHostedListings = (props) => {
       alert(data.error);
     } else {
       console.log('create listings');
+      navigate('/hosted-listings')
     }
   };
 
