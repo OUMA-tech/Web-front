@@ -178,14 +178,12 @@ export const AllListings = () => {
   const [listings, setListings] = React.useState([]);
   const [myListings, setMyListings] = React.useState([]);
   const [originalListings, setOriginalListings] = React.useState([]);
-  const [allListings, setAllListings] = React.useState([]);
   const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
   const [searchTerms, setSearchTerms] = React.useState([]);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
   const owner = localStorage.getItem('email');
   console.log(owner);
-  setMyListings([]);
   React.useEffect(() => {
     const fetchListings = async () => {
       console.log('fetching listings')
@@ -201,8 +199,6 @@ export const AllListings = () => {
         alert(data.error);
       } else {
         console.log(data);
-        setAllListings(data.listings);
-        console.log(allListings);
         fetchAllListings(data.listings);
       }
     };
@@ -227,8 +223,7 @@ export const AllListings = () => {
       );
       const validListings = updatedListings.filter(listing => listing !== null);
       console.log(validListings);
-      setListings(prevListings => [...prevListings, ...validListings]);
-      setOriginalListings(prevOriginalListings => [...prevOriginalListings, ...validListings]);
+      setOriginalListings(validListings);
     }
     fetchListings();
     // to fetch the listing I've booked
@@ -245,45 +240,51 @@ export const AllListings = () => {
         if (data.error) {
           alert(data.error);
         } else {
-          // const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
-          // if (filterMyListing.length !== 0) {
-          //   // add the listing with booking status accpet/pending to myListings
-          //   console.log(filterMyListing);
-          //   const filteredListings = filterMyListing.filter(booking => booking.status === 'accpted' || booking.status === 'pending');
-          //   setMyListings(filteredListings);
-          //   console.log('my listings')
-          //   console.log(data.listings);
-          // } else {
-          //   // no booking yet
-          //   console.log('No bookings yet');
-          // }
+          const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
+          if (filterMyListing.length !== 0) {
+            // add the listing with booking status accpet/pending to myListings
+            console.log(filterMyListing);
+            const filteredListings = filterMyListing.filter(booking => booking.status === 'accpted' || booking.status === 'pending');
+            setMyListings(filteredListings);
+            console.log('my listings')
+            console.log(data.listings);
+          } else {
+            // no booking yet
+            console.log('No bookings yet');
+          }
         }
       };
       fetchMyListings();
     }
-  }, []);
+  }, [token]);
   console.log(myListings);
-  console.log(listings);
+  console.log(originalListings);
   // sort the order with booking status accpet/pending first, then alphabet order
-  const sortedListings = [...myListings, ...listings]
-    .sort((a, b) => {
-      // make the numeric title at the last
-      const isNumeric = (str) => /^\d+$/.test(str);
-      if (isNumeric(a.title) && !isNumeric(b.title)) {
-        return 1;
-      }
-      if (!isNumeric(a.title) && isNumeric(b.title)) {
-        return -1;
-      }
-      // make the listing I've booked at the front
-      if (listings.includes(a) && !myListings.includes(b)) {
-        return -1;
-      }
-      if (!myListings.includes(a) && listings.includes(b)) {
-        return 1;
-      }
-      return a.title.localeCompare(b.title);
-    });
+  const sortedListings = [...originalListings].sort((a, b) => {
+    // 检查标题是否全为数字
+    const isNumeric = (str) => /^\d+$/.test(str);
+    // 检查id是否在myListings中
+    const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
+    // 如果a在myListings中而b不在，a排在前面
+    if (isInMyListings(a.id) && !isInMyListings(b.id)) {
+      return -1;
+    }
+    // 如果b在myListings中而a不在，b排在前面
+    if (!isInMyListings(a.id) && isInMyListings(b.id)) {
+      return 1;
+    }
+    // 如果a的标题全为数字而b不是，a排在后面
+    if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
+      return 1;
+    }
+    // 如果b的标题全为数字而a不是，b排在后面
+    if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
+      return -1;
+    }
+    // 其他情况按标题字母顺序排序
+    return a.data.listing.title.localeCompare(b.data.listing.title);
+  });
+  console.log(sortedListings);
   // search function
   const handleSearch = (searchTerm) => {
     console.log(searchTerm);
@@ -326,6 +327,7 @@ export const AllListings = () => {
     }
   };
   const uniqueListings = Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values());
+  console.log(uniqueListings);
   return (
     <>
       <Typography variant="h3" gutterBottom>All Listings</Typography>
@@ -333,15 +335,23 @@ export const AllListings = () => {
         showAdvancedSearch={showAdvancedSearch}
         setShowAdvancedSearch={setShowAdvancedSearch} />
       <div>
-        {listings.length === 0
+        {uniqueListings.length === 0
           ? <p>No listings available</p>
           : uniqueListings.map((listing) => (
               <div key={listing.id} onClick={ () => { navigate(`/listing/${listing.id}`, { state: { data: listing } }); }}>
                 <hr />
                 <h2>{listing.data.listing.title}</h2>
-                {localStorage.getItem('token')
+                {token && myListings.some(myListing => parseInt(myListing.listingId) === listing.id)
                   ? (
                   <>
+                  <Typography variant="h5" gutterBottom style={{ color: 'Red' }}>Status: </Typography>
+                  { myListings.filter(myListing => parseInt(myListing.listingId) === listing.id)
+                    .map(matchedListing => (
+                      <div key={matchedListing.listingId}>
+                        <p>{matchedListing.status}</p>
+                      </div>
+                    ))
+                  }
                   </>
                     )
                   : (

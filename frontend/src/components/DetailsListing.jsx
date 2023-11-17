@@ -42,7 +42,7 @@ export const DetailsBox = (props) => {
   const classes = dateStyles();
   // booking function
   const booking = async (newRange) => {
-    console.log(listing.data.listing)
+    console.log(listing)
     const token = localStorage.getItem('token');
     const dateRange = newRange;
     const date1 = new Date(dateRange.end);
@@ -84,7 +84,7 @@ export const DetailsBox = (props) => {
     if (data.error) {
       alert(data.error);
     } else {
-      setAllBookings([...data.bookings]);
+      setAllBookings(data.bookings);
     }
   }
   React.useEffect(() => {
@@ -93,7 +93,7 @@ export const DetailsBox = (props) => {
     }
   }, [])
 
-  console.log(allBookings.bookings, bookingId);
+  console.log(allBookings, bookingId);
   return (
       <div>
         <Typography variant="h3" gutterBottom>Listing Details</Typography>
@@ -102,6 +102,15 @@ export const DetailsBox = (props) => {
         </Button>
         <div>
           <h2>Title {listing.data.listing.title}</h2>
+          <Typography variant="h5" gutterBottom style={{ color: 'Red' }}>Status:</Typography>
+          { allBookings.filter(booking => parseInt(booking.listingId) === listing.id)
+            .map(machedBooking => (
+              <div key={machedBooking.id}>
+                <p>{machedBooking.status}</p>
+                <hr/>
+              </div>
+            ))
+          }
           <p>Address {listing.data.listing.address.SpecificAddress} {listing.data.listing.address.Suburb} {listing.data.listing.address.State}</p>
           <p>Amenities: {listing.data.listing.metadata.Amenities}</p>
           <p>Price per night: ${listing.data.listing.price}</p>
