@@ -14,10 +14,12 @@ export const HostedListings = (props) => {
     }
   }, [props.token, navigate]);
   const [listings, setListings] = React.useState([]);
+  const [allListings, setAllListings] = React.useState([]);
   const owner = localStorage.getItem('email');
   console.log('owner', owner);
   React.useEffect(() => {
     const fetchListings = async () => {
+      console.log('fetching listings')
       const response = await fetch('http://localhost:5005/listings', {
         method: 'GET',
         headers: {
@@ -29,12 +31,36 @@ export const HostedListings = (props) => {
       if (data.error) {
         alert(data.error);
       } else {
-        const hostedListings = data.listings.filter(listing => listing.owner === owner);
-        setListings(hostedListings);
-        console.log('hosted listings');
+        console.log(data);
+        setAllListings(data.listings);
+        console.log(allListings);
+        fetchAllListings(data.listings);
       }
     };
 
+    const fetchAllListings = async (listings) => {
+      const updatedListings = await Promise.all(
+        listings.map(async (listing) => {
+          const response = await fetch(`http://localhost:5005/listings/${listing.id}`, {
+            method: 'GET',
+            headers: {
+              'Content-type': 'application/json',
+            },
+          });
+          const data = await response.json();
+          if (data.error) {
+            alert(data.error);
+            return null;
+          } else {
+            console.log(data);
+            return data.listing.owner === owner ? { id: listing.id, data } : null;
+          }
+        })
+      );
+      const validListings = updatedListings.filter(listing => listing !== null);
+      console.log(updatedListings);
+      setListings(prevListings => [...prevListings, ...validListings]);
+    }
     fetchListings();
   }, [owner]);
 
@@ -121,10 +147,39 @@ export const HostedListings = (props) => {
 
   // publish a listing
   const publishListing = async (listing, availability) => {
+    if (availability.length === 0) {
+      window.alert('You have to add at least one available date range');
+      navigate('/dashboard')
+    } else {
+      const listingId = listing.id;
+      console.log(listing);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5005/listings/publish/${listingId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          availability
+        }),
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        window.alert('publish successful!');
+        clearAvailability();
+        navigate('/dashboard');
+      }
+    }
+  }
+  console.log(listings);
+  const unPublish = async (listing) => {
     const listingId = listing.id;
     console.log(listing);
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5005/listings/publish/${listingId}`, {
+    const response = await fetch(`http://localhost:5005/listings/unpublish/${listingId}`, {
       method: 'PUT',
       body: JSON.stringify({
         availability
@@ -138,9 +193,8 @@ export const HostedListings = (props) => {
     if (data.error) {
       alert(data.error);
     } else {
-      window.alert('publish successful!');
-      clearAvailability();
-      navigate('/hosted-listings');
+      window.alert('unpublish successful!');
+      navigate('/dashboard');
     }
   }
   return (
@@ -153,18 +207,18 @@ export const HostedListings = (props) => {
           : listings.map((listing) => (
               <div key={listing.id}>
                 <hr />
-                <h2>Title {listing.title}</h2>
-                <p>Property type {}</p>
-                <p>🛏️ {}</p>
-                <p>🛀 {}</p>
-                <img src={listing.thumbnail} alt={listing.title} />
-                <p>SVG rating{}</p>
-                <p>Number of reviews</p>
-                <p>Price: ${listing.price}</p>
-                <div>{listing.reviews}</div>
+                <h2>Title {listing.data.listing.title}</h2>
+                <p>Address {listing.data.listing.address.SpecificAddress} {listing.data.listing.address.Suburb} {listing.data.listing.address.State}</p>
+                <p>Price: ${listing.data.listing.price}</p>
+                <img src={listing.data.listing.thumbnail} alt={listing.data.listing.title} />
+                <p>Property type: {listing.data.listing.metadata.PropertyType}</p>
+                <p>Number of bathrooms: {listing.data.listing.metadata.Bathroom}</p>
+                <p>Bedrooms: {listing.data.listing.metadata.Bed}</p>
+                <p>Amenities: {listing.data.listing.metadata.Amenities}</p>
                 <ButtonGroup variant="text" color="primary" aria-label="text primary button group">
                 <Button color="primary" onClick={() => navigate('/edit-listing', { state: { listingId: listing.id } })}>Edit</Button>
                 <Button color="secondary" onClick={() => deleteLisitng(listing)}>Delete</Button>
+                <Button color="primary" onClick={ () => { navigate(`/request/${listing.id}`, { state: { data: listing } }) }}>View Request</Button>
                 </ButtonGroup>
                 <div>
                   <form className={classes.container} noValidate style={{ marginTop: '2vh' }}>
@@ -203,6 +257,7 @@ export const HostedListings = (props) => {
                   <ButtonGroup variant="text" color="primary" aria-label="text primary button group">
                     <Button color="primary" onClick={() => publishListing(listing, availability)}>Publish</Button>
                     <Button color="secondary" onClick={clearAvailability}>Clear</Button>
+                    <Button color="secondary" onClick={() => unPublish(listing)}>Unpublish</Button>
                   </ButtonGroup>
                 </div>
               </div>

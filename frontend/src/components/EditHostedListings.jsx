@@ -4,6 +4,11 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { makeStyles } from '@material-ui/core/styles';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
 
 export const EditHostedListings = (props) => {
   const navigate = useNavigate()
@@ -15,15 +20,11 @@ export const EditHostedListings = (props) => {
   const location = useLocation();
   const { listingId } = location.state || {};
   const [title, setTitle] = React.useState('');
-  const [address, setAddress] = React.useState([]);
+  const [state, setState] = React.useState('');
+  const [suburb, setSuburb] = React.useState('');
+  const [specificAddress, setSpecificAddress] = React.useState('');
   const [thumbnail, setThumbnail] = React.useState('');
-  const [price, setPrice] = React.useState('');
-  const [metadata, setMetadata] = React.useState({
-    PropertyType: '',
-    Bathroom: 0,
-    Bed: 0,
-    Amenities: '',
-  });
+  const [price, setPrice] = React.useState(0);
   const [propertyType, setPropertyType] = React.useState('');
   const [bathroom, setBathroom] = React.useState('');
   const [bed, setBed] = React.useState('');
@@ -32,17 +33,22 @@ export const EditHostedListings = (props) => {
   const token = localStorage.getItem('token');
   if (!listingId) return;
   const editListings = async () => {
-    setMetadata({
-      ...metadata,
+    const updatedAddress = {
+      SpecificAddress: specificAddress,
+      Suburb: suburb,
+      State: state,
+    };
+    const updatedMetadata = {
       PropertyType: propertyType,
       Bathroom: bathroom,
       Bed: bed,
       Amenities: amenities,
-    })
+      ListImages: listImages,
+    };
     const response = await fetch(`http://localhost:5005/listings/${listingId}`, {
       method: 'PUT',
       body: JSON.stringify({
-        title, address, thumbnail, price, metadata
+        title, address: updatedAddress, thumbnail, price, metadata: updatedMetadata
       }),
       headers: {
         'Content-type': 'application/json',
@@ -57,7 +63,16 @@ export const EditHostedListings = (props) => {
       console.log('edit hosted listings');
     }
   };
-
+  const useStyles = makeStyles((theme) => ({
+    formControl: {
+      margin: theme.spacing(1),
+      minWidth: 120,
+    },
+    selectEmpty: {
+      marginTop: theme.spacing(2),
+    },
+  }));
+  const classes = useStyles();
   return (
     <>
      <Box
@@ -70,13 +85,28 @@ export const EditHostedListings = (props) => {
   >
     <Typography variant="h3" gutterBottom>Edit Hosted Listings</Typography>
     <TextField type='text' label = 'Title' value = {title} onChange = {e => { setTitle(e.target.value) }}/><br />
-    <TextField type='text' label = 'Address' value = {address} onChange = {e => { setAddress(e.target.value) }}/><br />
+    <TextField type='text' label = 'State' value = {state} onChange = {e => { setState(e.target.value) }}/><br />
+    <TextField type='text' label = 'Suburb' value = {suburb} onChange = {e => { setSuburb(e.target.value) }}/><br />
+    <TextField type='text' label = 'Unit & Street' value = {specificAddress} onChange = {e => { setSpecificAddress(e.target.value) }}/><br />
     <TextField type='text' label = 'Price' value = {price} onChange = {e => { setPrice(e.target.value) }}/><br />
     <TextField type='text' label = 'Thumbnail' value = {thumbnail} onChange = {e => { setThumbnail(e.target.value) }}/><br />
-    <TextField type='text' label = 'PropertyType' value = {propertyType} onChange = {e => { setPropertyType(e.target.value) }}/><br />
+    <FormControl className={classes.formControl}>
+        <InputLabel id="demo-simple-select-label">Property Type</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={propertyType}
+          onChange={ e => { setPropertyType(e.target.value) }}
+        >
+          <MenuItem value={'appartment'}>Appartment</MenuItem>
+          <MenuItem value={'house'}>House</MenuItem>
+        </Select>
+      </FormControl>
+    <br />
     <TextField type='text' label = 'Number of 🛀' value = {bathroom} onChange = {e => { setBathroom(e.target.value) }}/><br />
-    <TextField type='text' label = 'Number of 🛏️' value = {bed} onChange = {e => { setBed(e.target.value) }}/><br />
+    <TextField type='text' label = 'Number of bedrooms' value = {bed} onChange = {e => { setBed(e.target.value) }}/><br />
     <TextField type='text' label = 'Amenities' value = {amenities} onChange = {e => { setAmenities(e.target.value) }}/><br />
+    <br />
     <TextField type='text' label = 'List of Images' value = {listImages} onChange = {e => { setListImages(e.target.value) }}/><br />
     <br />
     <Button variant="contained" color="primary" type='Button' onClick = {editListings}>Submit</Button>

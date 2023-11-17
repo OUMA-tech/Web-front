@@ -9,6 +9,8 @@ import HostedListings from './components/HostedListings';
 import EditHostedListings from './components/EditHostedListings';
 import CreateHostedListings from './components/CreateHostedListings';
 import Footer from './components/Footer'
+import { DetailsBox } from './components/DetailsListing';
+import Request from './components/Request';
 
 const PageList = () => {
   const [token, setToken] = React.useState(null);
@@ -58,6 +60,10 @@ const PageList = () => {
         <Route path="/hosted-listings" element={<HostedListings token = {token} setToken = {setToken}/>} />
         <Route path="/edit-listing" element={<EditHostedListings token = {token} setToken = {setToken}/>} />
         <Route path="/create-listing" element={<CreateHostedListings token = {token} setToken = {setToken}/>} />
+        { /* need to be set later */ }
+        <Route path="/listing/:listingId" element={<DetailsBox token = {token} setToken = {setToken}/>} />
+        <Route path="/booking-listing" element={<CreateHostedListings token = {token} setToken = {setToken}/>} />
+        <Route path="/request/:listingId" element={<Request token = {token} setToken = {setToken}/>} />
       </Routes>
 
     <hr/>
