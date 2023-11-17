@@ -61,6 +61,7 @@ export const EditHostedListings = (props) => {
       alert(data.error);
     } else {
       console.log('edit hosted listings');
+      navigate('/')
     }
   };
   const useStyles = makeStyles((theme) => ({
