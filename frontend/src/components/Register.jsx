@@ -9,6 +9,7 @@ const Register = (props) => {
   console.log(props);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [confirmpassword, setConfirmPassword] = React.useState('');
   const [name, setName] = React.useState('')
   const navigate = useNavigate();
   React.useEffect(() => {
@@ -16,6 +17,7 @@ const Register = (props) => {
       navigate('/dashboard');
     }
   })
+
   const register = async () => {
     console.log(email, name, password);
     const response = await fetch('http://localhost:5005/user/auth/register', {
@@ -54,9 +56,17 @@ const Register = (props) => {
       <TextField type='text' label = 'Email' value = {email} onChange = {e => { setEmail(e.target.value) }}/><br />
       <div />
       <TextField type='password' label = 'Password' value = {password} onChange = {e => { setPassword(e.target.value) }}/><br />
+      <TextField type='confirmpassword' label = 'confirmPassword' value = {confirmpassword} onChange = {e => { setConfirmPassword(e.target.value) }}/><br />
       <TextField type='text' label = 'Name' value = {name} onChange = {e => { setName(e.target.value) }}/><br />
       <br />
-      <Button variant="contained" type='Button' onClick={register}>Register</Button>
+      <Button variant="contained" type='Button' onClick={() => {
+        if (password !== confirmpassword) {
+          window.alert('confrim password does not match to password ');
+          navigate('/register');
+        } else {
+          register();
+        }
+      }}>Register</Button>
     </Box>
   )
 }
