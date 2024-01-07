@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import Rating from '@mui/material/Rating';
 
 // create the detailsBox
 export const DetailsBox = (props) => {
@@ -123,8 +124,6 @@ export const DetailsBox = (props) => {
               )
           }
           <p>Property type: {listing.data.listing.metadata.PropertyType}</p>
-          <p>Reviews {listing.data.listing.reviews}</p>
-
           <p>Bedrooms: {listing.data.listing.metadata.Bed}</p>
           <p>Number of bathrooms: {listing.data.listing.metadata.Bathroom}</p>
           { token && (
@@ -171,6 +170,25 @@ export const DetailsBox = (props) => {
                   }
                 }
               }}>Booking</Button>
+            { listing.data.listing.reviews.length === 0
+              ? <div>
+                <Typography component="legend">No rating given</Typography>
+                <Rating name="no-value" value={null} />
+              </div>
+              : <div>
+                <hr/>
+                <Typography variant="h6">
+                  {listing.data.listing.owner} reviewed:
+                </Typography>
+                {listing.data.listing.reviews.map((review, index) => (
+                  <div key={index}>
+                    <p>{index + 1}.</p>
+                    <Rating name="read-only" value={review.Rate} readOnly />
+                    <p>reviews:{review.Comment}</p>
+                  </div>
+                ))}
+              </div>
+          }
             </>
           )}
         </div>

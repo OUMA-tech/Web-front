@@ -8,6 +8,7 @@ import Button from '@mui/material/Button';
 
 export const AllListings = () => {
   const [value, setValue] = React.useState(2);
+  const [comment, setComment] = React.useState('');
   const [listings, setListings] = React.useState([]);
   const [myListings, setMyListings] = React.useState([]);
   const [originalListings, setOriginalListings] = React.useState([]);
@@ -120,6 +121,7 @@ export const AllListings = () => {
     return a.data.listing.title.localeCompare(b.data.listing.title);
   });
   console.log(sortedListings);
+
   // search function
   const handleSearch = (searchTerm) => {
     console.log(searchTerm);
@@ -164,19 +166,29 @@ export const AllListings = () => {
   const uniqueListings = Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values());
   console.log(uniqueListings);
 
-  const review = async () => {
-    const response = await fetch('http://localhost:5005/listings', {
-      method: 'GET',
+  const reviewSubmit = async (matchedListing) => {
+    console.log(matchedListing);
+    const re = {
+      Comment: comment, Rate: value
+    }
+    console.log(re);
+    const response = await fetch(`http://localhost:5005/listings/${matchedListing.listingId}/review/${matchedListing.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        review: re
+      }),
       headers: {
         'Content-type': 'application/json',
+        Authorization: `Bearer ${token}`
       },
     });
     const data = await response.json();
 
     if (data.error) {
-      alert(data.error);
+      window.alert(data.error);
     } else {
-      console.log(data);
+      window.alert('reciew successful!');
+      navigate('/');
     }
   }
   return (
@@ -191,39 +203,54 @@ export const AllListings = () => {
           : uniqueListings.map((listing) => (
               <div key={listing.id} onClick={() => { navigate(`/listing/${listing.id}`, { state: { data: listing } }); }}>
                 <hr />
-                <h2>{listing.data.listing.title}</h2>
-                {token && myListings.some(myListing => parseInt(myListing.listingId) === listing.id)
-                  ? (
-                  <>
-                  <Typography variant="h5" gutterBottom style={{ color: 'Red' }}>Status: </Typography>
-                  { myListings.filter(myListing => parseInt(myListing.listingId) === listing.id)
-                    .map(matchedListing => (
-                      <div key={matchedListing.listingId}>
-                        <p>{matchedListing.status}</p>
-                        {matchedListing.status === 'accepted'
-                          ? <div onClick={(event) => { event.stopPropagation() }} >
-                          <TextField id="outlined-basic" label="Comment" variant="outlined"/>
-                          <Rating
-                            name="simple-controlled"
-                            value={value}
-                            onChange={(event, newValue) => {
-                              setValue(newValue);
-                            }}
-                          />
-                          <Button variant="contained" onClick={() => { review(matchedListing) }}>Leave a review</Button>
-                        </div>
-                          : <></>
-                        }
-                      </div>
-                    ))
-                  }
-                  </>
-                    )
-                  : (
-                      null
-                    )}
+                <Typography variant="h3">{listing.data.listing.title}</Typography>
                 <img src={listing.data.listing.thumbnail} alt={listing.data.listing.title} />
-                <p>reviews:{listing.data.listing.reviews}</p>
+                {token && myListings.some(myListing => parseInt(myListing.listingId) === listing.id)
+                  ? <>
+                      <Typography variant="h5" gutterBottom style={{ color: 'Red' }}>Status: </Typography>
+                      { myListings.filter(myListing => parseInt(myListing.listingId) === listing.id)
+                        .map(matchedListing => (
+                          <div key={matchedListing.listingId}>
+                            <p>{matchedListing.status}</p>
+                            {matchedListing.status === 'accepted'
+                              ? <div onClick={(event) => { event.stopPropagation() }} >
+                              <TextField id="outlined-basic" label="Comment" variant="outlined" onChange = {e => { setComment(e.target.value) }}/>
+                              <Rating
+                                name="simple-controlled"
+                                value={value}
+                                onChange={(event, newValue) => {
+                                  setValue(newValue);
+                                }}
+                              />
+                              <Button variant="contained" onClick={() => { reviewSubmit(matchedListing) }}>Leave a review</Button>
+                            </div>
+                              : <></>
+                            }
+                          </div>
+                        ))
+                      }
+                    </>
+                  : <></>
+                }
+                { listing.data.listing.reviews.length === 0
+                  ? <div>
+                      <Typography component="legend">No rating given</Typography>
+                      <Rating name="no-value" value={null} />
+                    </div>
+                  : <div>
+                    <hr/>
+                      <Typography variant="h6">
+                       {listing.data.listing.owner} reviewed:
+                      </Typography>
+                      {listing.data.listing.reviews.map((review, index) => (
+                        <div key={index}>
+                          <p>{index + 1}.</p>
+                          <Rating name="read-only" value={review.Rate} readOnly />
+                          <p>reviews:{review.Comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                }
               </div>
           ))
         }
