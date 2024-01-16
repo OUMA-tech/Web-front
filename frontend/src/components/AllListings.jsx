@@ -12,6 +12,10 @@ export const AllListings = () => {
   const [listings, setListings] = React.useState([]);
   const [myListings, setMyListings] = React.useState([]);
   const [originalListings, setOriginalListings] = React.useState([]);
+  const [uniqueListings, setUniqueListings] = React.useState([]);
+  // use this to control rerander
+  const [forceUpdate, setForceUpdate] = React.useState(0);
+  const [previousData, setPreviousData] = React.useState([]);
   const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
   const [searchTerms, setSearchTerms] = React.useState([]);
   const token = localStorage.getItem('token');
@@ -19,8 +23,9 @@ export const AllListings = () => {
   const owner = localStorage.getItem('email');
   console.log(owner);
 
-  React.useEffect(() => {
+  const fetchAll = async () => {
     const fetchListings = async () => {
+      let value;
       console.log('fetching listings')
       const response = await fetch('http://localhost:5005/listings', {
         method: 'GET',
@@ -34,10 +39,11 @@ export const AllListings = () => {
         alert(data.error);
       } else {
         console.log(data);
-        fetchAllListings(data.listings);
+        value = await fetchAllListings(data.listings);
       }
+      return value;
     };
-
+    // find check all listing by searching their id and see details including: publish and status
     const fetchAllListings = async (listings) => {
       const updatedListings = await Promise.all(
         listings.map(async (listing) => {
@@ -59,68 +65,116 @@ export const AllListings = () => {
       const validListings = updatedListings.filter(listing => listing !== null);
       console.log(validListings);
       setOriginalListings(validListings);
+      return validListings;
     }
-    fetchListings();
     // to fetch the listing I've booked
-    if (token) {
-      const fetchMyListings = async () => {
-        const response = await fetch('http://localhost:5005/bookings', {
-          method: 'GET',
-          headers: {
-            'Content-type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-        });
-        const data = await response.json();
-        if (data.error) {
-          alert(data.error);
+    const fetchMyListings = async () => {
+      let value;
+      const response = await fetch('http://localhost:5005/bookings', {
+        method: 'GET',
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+      });
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
+        if (filterMyListing.length !== 0) {
+          // add the listing with booking status accpet/pending to myListings
+          console.log(filterMyListing);
+          const filteredListings = filterMyListing.filter(booking => booking.status === 'accepted' || booking.status === 'pending');
+          setMyListings(filteredListings);
+          value = filteredListings;
+          console.log('my listings')
+          console.log(data.listings);
         } else {
-          const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
-          if (filterMyListing.length !== 0) {
-            // add the listing with booking status accpet/pending to myListings
-            console.log(filterMyListing);
-            const filteredListings = filterMyListing.filter(booking => booking.status === 'accepted' || booking.status === 'pending');
-            setMyListings(filteredListings);
-            console.log('my listings')
-            console.log(data.listings);
-          } else {
-            // no booking yet
-            console.log('No bookings yet');
-          }
+          // no booking yet
+          console.log('No bookings yet');
         }
-      };
-      fetchMyListings();
+      }
+      return value;
+    };
+    const fetchDataAndSort = async () => {
+      // 使用Promise.all等待fetchListing和fetchMyListing两个异步操作完成
+      const [originalListings, myListings] = await Promise.all([fetchListings(), fetchMyListings()]);
+      // 在此之后，你可以将originalListings和myListings合并，然后进行排序
+      const allListings = [...originalListings];
+      const sortedListings = allListings.sort((a, b) => {
+        // 排序逻辑，这里使用你提供的排序逻辑
+        // 检查标题是否全为数字
+        const isNumeric = (str) => /^\d+$/.test(str);
+        // 检查id是否在myListings中
+        const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
+        // 如果a在myListings中而b不在，a排在前面
+        if (isInMyListings(a.id) && !isInMyListings(b.id)) {
+          return -1;
+        }
+        // 如果b在myListings中而a不在，b排在前面
+        if (!isInMyListings(a.id) && isInMyListings(b.id)) {
+          return 1;
+        }
+        // 如果a的标题全为数字而b不是，a排在后面
+        if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
+          return 1;
+        }
+        // 如果b的标题全为数字而a不是，b排在后面
+        if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
+          return -1;
+        }
+        // 其他情况按标题字母顺序排序
+        return a.data.listing.title.localeCompare(b.data.listing.title);
+      });
+      // sort the order with booking status accpet/pending first, then alphabet order
+      // const sortedListings = [...originalListings].sort((a, b) => {
+      //   // 检查标题是否全为数字
+      //   const isNumeric = (str) => /^\d+$/.test(str);
+      //   // 检查id是否在myListings中
+      //   const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
+      //   // 如果a在myListings中而b不在，a排在前面
+      //   if (isInMyListings(a.id) && !isInMyListings(b.id)) {
+      //     return -1;
+      //   }
+      //   // 如果b在myListings中而a不在，b排在前面
+      //   if (!isInMyListings(a.id) && isInMyListings(b.id)) {
+      //     return 1;
+      //   }
+      //   // 如果a的标题全为数字而b不是，a排在后面
+      //   if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
+      //     return 1;
+      //   }
+      //   // 如果b的标题全为数字而a不是，b排在后面
+      //   if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
+      //     return -1;
+      //   }
+      //   // 其他情况按标题字母顺序排序
+      //   return a.data.listing.title.localeCompare(b.data.listing.title);
+      // });
+      console.log(sortedListings);
+      // this is the final listing displayed on the web
+      setUniqueListings(Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values()));
     }
-  }, [token]);
+    fetchDataAndSort();
+  }
+  React.useEffect(() => {
+    const fetchDataAndUpdateState = async () => {
+      try {
+        const newData = await fetchAll();
+        if (JSON.stringify(newData) !== JSON.stringify(previousData)) {
+          setPreviousData(newData);
+          setForceUpdate(prev => prev + 1);
+          console.log('forceUpdate called');
+        }
+      } catch (error) {
+      }
+    }
+    fetchDataAndUpdateState();
+  }, [token, forceUpdate]);
+  console.log(uniqueListings);
   console.log(myListings);
   console.log(originalListings);
-
-  // sort the order with booking status accpet/pending first, then alphabet order
-  const sortedListings = [...originalListings].sort((a, b) => {
-    // 检查标题是否全为数字
-    const isNumeric = (str) => /^\d+$/.test(str);
-    // 检查id是否在myListings中
-    const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
-    // 如果a在myListings中而b不在，a排在前面
-    if (isInMyListings(a.id) && !isInMyListings(b.id)) {
-      return -1;
-    }
-    // 如果b在myListings中而a不在，b排在前面
-    if (!isInMyListings(a.id) && isInMyListings(b.id)) {
-      return 1;
-    }
-    // 如果a的标题全为数字而b不是，a排在后面
-    if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
-      return 1;
-    }
-    // 如果b的标题全为数字而a不是，b排在后面
-    if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
-      return -1;
-    }
-    // 其他情况按标题字母顺序排序
-    return a.data.listing.title.localeCompare(b.data.listing.title);
-  });
-  console.log(sortedListings);
 
   // search function
   const handleSearch = (searchTerm) => {
@@ -163,8 +217,6 @@ export const AllListings = () => {
       }
     }
   };
-  const uniqueListings = Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values());
-  console.log(uniqueListings);
 
   const reviewSubmit = async (matchedListing) => {
     console.log(matchedListing);
@@ -187,8 +239,8 @@ export const AllListings = () => {
     if (data.error) {
       window.alert(data.error);
     } else {
-      window.alert('reciew successful!');
-      navigate('/');
+      window.alert('review successful!');
+      fetchAll();
     }
   }
   return (
