@@ -6,162 +6,168 @@ import TextField from '@mui/material/TextField';
 import Rating from '@mui/material/Rating';
 import Button from '@mui/material/Button';
 
-export const AllListings = () => {
-  const [value, setValue] = React.useState(2);
-  const [comment, setComment] = React.useState('');
-  const [listings, setListings] = React.useState([]);
+const fetchListings = async () => {
+  console.log('fetching listings')
+  const response = await fetch('http://localhost:5005/listings', {
+    method: 'GET',
+    headers: {
+      'Content-type': 'application/json',
+    },
+  });
+  const data = await response.json();
+  if (data.error) {
+    alert(data.error);
+  } else {
+    console.log(data);
+  }
+  return data;
+};
+
+const fetchAllListings = async () => {
   const [myListings, setMyListings] = React.useState([]);
   const [originalListings, setOriginalListings] = React.useState([]);
   const [uniqueListings, setUniqueListings] = React.useState([]);
+  const token = localStorage.getItem('token');
+  const owner = localStorage.getItem('email');
+  console.log(owner);
+
+  // find check all listing by searching their id and see details including: publish and status, store the result in originalListings
+  const fetchAllListingsDetail = async (listings) => {
+    const updatedListings = await Promise.all(
+      listings.map(async (listing) => {
+        const response = await fetch(`http://localhost:5005/listings/${listing.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        if (data.error) {
+          alert(data.error);
+          return null;
+        } else {
+          return data.listing.published ? { id: listing.id, data } : null;
+        }
+      })
+    );
+    const validListings = updatedListings.filter(listing => listing !== null);
+    console.log(validListings);
+    setOriginalListings(validListings);
+  }
+
+  // to fetch the listing I've booked, store the result in myListings
+  const fetchMyListings = async () => {
+    const response = await fetch('http://localhost:5005/bookings', {
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+    });
+    const data = await response.json();
+    if (data.error) {
+      alert(data.error);
+    } else {
+      const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
+      if (filterMyListing.length !== 0) {
+        // add the listing with booking status accpet/pending to myListings
+        console.log(filterMyListing);
+        const filteredListings = filterMyListing.filter(booking => booking.status === 'accepted' || booking.status === 'pending');
+        setMyListings(filteredListings);
+        console.log('my listings')
+        console.log(data.listings);
+      } else {
+        // no booking yet
+        console.log('No bookings yet');
+      }
+    }
+  };
+
+  // fetch the listing and sort
+  const fetchDataAndSort = async () => {
+    // 使用Promise.all等待fetchListing和fetchMyListing两个异步操作完成
+    const data = await fetchListings();
+    await fetchAllListingsDetail(data.listings);
+    await fetchMyListings();
+    // 在此之后，你可以将originalListings和myListings合并，然后进行排序
+    const allListings = [...originalListings];
+    const sortedListings = allListings.sort((a, b) => {
+      // 排序逻辑，这里使用你提供的排序逻辑
+      // 检查标题是否全为数字
+      const isNumeric = (str) => /^\d+$/.test(str);
+      // 检查id是否在myListings中
+      const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
+      // 如果a在myListings中而b不在，a排在前面
+      if (isInMyListings(a.id) && !isInMyListings(b.id)) {
+        return -1;
+      }
+      // 如果b在myListings中而a不在，b排在前面
+      if (!isInMyListings(a.id) && isInMyListings(b.id)) {
+        return 1;
+      }
+      // 如果a的标题全为数字而b不是，a排在后面
+      if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
+        return 1;
+      }
+      // 如果b的标题全为数字而a不是，b排在后面
+      if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
+        return -1;
+      }
+      // 其他情况按标题字母顺序排序
+      return a.data.listing.title.localeCompare(b.data.listing.title);
+    });
+    // sort the order with booking status accpet/pending first, then alphabet order
+    // const sortedListings = [...originalListings].sort((a, b) => {
+    //   // 检查标题是否全为数字
+    //   const isNumeric = (str) => /^\d+$/.test(str);
+    //   // 检查id是否在myListings中
+    //   const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
+    //   // 如果a在myListings中而b不在，a排在前面
+    //   if (isInMyListings(a.id) && !isInMyListings(b.id)) {
+    //     return -1;
+    //   }
+    //   // 如果b在myListings中而a不在，b排在前面
+    //   if (!isInMyListings(a.id) && isInMyListings(b.id)) {
+    //     return 1;
+    //   }
+    //   // 如果a的标题全为数字而b不是，a排在后面
+    //   if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
+    //     return 1;
+    //   }
+    //   // 如果b的标题全为数字而a不是，b排在后面
+    //   if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
+    //     return -1;
+    //   }
+    //   // 其他情况按标题字母顺序排序
+    //   return a.data.listing.title.localeCompare(b.data.listing.title);
+    // });
+    console.log(sortedListings);
+    // this is the final listing displayed on the web
+    setUniqueListings(Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values()));
+  }
+  fetchDataAndSort();
+  console.log(uniqueListings);
+  console.log(myListings);
+  console.log(originalListings);
+
+  return uniqueListings;
+}
+export const AllListingsComponent = async () => {
+  const [value, setValue] = React.useState(2);
+  const [comment, setComment] = React.useState('');
+  const [allListings, setAllListings] = React.useState([]);
   // use this to control rerander
   const [forceUpdate, setForceUpdate] = React.useState(0);
   const [previousData, setPreviousData] = React.useState([]);
   const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
   const [searchTerms, setSearchTerms] = React.useState([]);
-  const token = localStorage.getItem('token');
   const navigate = useNavigate();
-  const owner = localStorage.getItem('email');
-  console.log(owner);
+  const token = localStorage.getItem('token');
 
-  const fetchAll = async () => {
-    const fetchListings = async () => {
-      let value;
-      console.log('fetching listings')
-      const response = await fetch('http://localhost:5005/listings', {
-        method: 'GET',
-        headers: {
-          'Content-type': 'application/json',
-        },
-      });
-      const data = await response.json();
-
-      if (data.error) {
-        alert(data.error);
-      } else {
-        console.log(data);
-        value = await fetchAllListings(data.listings);
-      }
-      return value;
-    };
-    // find check all listing by searching their id and see details including: publish and status
-    const fetchAllListings = async (listings) => {
-      const updatedListings = await Promise.all(
-        listings.map(async (listing) => {
-          const response = await fetch(`http://localhost:5005/listings/${listing.id}`, {
-            method: 'GET',
-            headers: {
-              'Content-type': 'application/json',
-            },
-          });
-          const data = await response.json();
-          if (data.error) {
-            alert(data.error);
-            return null;
-          } else {
-            return data.listing.published ? { id: listing.id, data } : null;
-          }
-        })
-      );
-      const validListings = updatedListings.filter(listing => listing !== null);
-      console.log(validListings);
-      setOriginalListings(validListings);
-      return validListings;
-    }
-    // to fetch the listing I've booked
-    const fetchMyListings = async () => {
-      let value;
-      const response = await fetch('http://localhost:5005/bookings', {
-        method: 'GET',
-        headers: {
-          'Content-type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-      });
-      const data = await response.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        const filterMyListing = data.bookings.filter(booking => booking.owner === owner)
-        if (filterMyListing.length !== 0) {
-          // add the listing with booking status accpet/pending to myListings
-          console.log(filterMyListing);
-          const filteredListings = filterMyListing.filter(booking => booking.status === 'accepted' || booking.status === 'pending');
-          setMyListings(filteredListings);
-          value = filteredListings;
-          console.log('my listings')
-          console.log(data.listings);
-        } else {
-          // no booking yet
-          console.log('No bookings yet');
-        }
-      }
-      return value;
-    };
-    const fetchDataAndSort = async () => {
-      // 使用Promise.all等待fetchListing和fetchMyListing两个异步操作完成
-      const [originalListings, myListings] = await Promise.all([fetchListings(), fetchMyListings()]);
-      // 在此之后，你可以将originalListings和myListings合并，然后进行排序
-      const allListings = [...originalListings];
-      const sortedListings = allListings.sort((a, b) => {
-        // 排序逻辑，这里使用你提供的排序逻辑
-        // 检查标题是否全为数字
-        const isNumeric = (str) => /^\d+$/.test(str);
-        // 检查id是否在myListings中
-        const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
-        // 如果a在myListings中而b不在，a排在前面
-        if (isInMyListings(a.id) && !isInMyListings(b.id)) {
-          return -1;
-        }
-        // 如果b在myListings中而a不在，b排在前面
-        if (!isInMyListings(a.id) && isInMyListings(b.id)) {
-          return 1;
-        }
-        // 如果a的标题全为数字而b不是，a排在后面
-        if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
-          return 1;
-        }
-        // 如果b的标题全为数字而a不是，b排在后面
-        if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
-          return -1;
-        }
-        // 其他情况按标题字母顺序排序
-        return a.data.listing.title.localeCompare(b.data.listing.title);
-      });
-      // sort the order with booking status accpet/pending first, then alphabet order
-      // const sortedListings = [...originalListings].sort((a, b) => {
-      //   // 检查标题是否全为数字
-      //   const isNumeric = (str) => /^\d+$/.test(str);
-      //   // 检查id是否在myListings中
-      //   const isInMyListings = (id) => myListings.some(listing => parseInt(listing.listingId) === id);
-      //   // 如果a在myListings中而b不在，a排在前面
-      //   if (isInMyListings(a.id) && !isInMyListings(b.id)) {
-      //     return -1;
-      //   }
-      //   // 如果b在myListings中而a不在，b排在前面
-      //   if (!isInMyListings(a.id) && isInMyListings(b.id)) {
-      //     return 1;
-      //   }
-      //   // 如果a的标题全为数字而b不是，a排在后面
-      //   if (isNumeric(a.data.listing.title) && !isNumeric(b.data.listing.title)) {
-      //     return 1;
-      //   }
-      //   // 如果b的标题全为数字而a不是，b排在后面
-      //   if (!isNumeric(a.data.listing.title) && isNumeric(b.data.listing.title)) {
-      //     return -1;
-      //   }
-      //   // 其他情况按标题字母顺序排序
-      //   return a.data.listing.title.localeCompare(b.data.listing.title);
-      // });
-      console.log(sortedListings);
-      // this is the final listing displayed on the web
-      setUniqueListings(Array.from(new Map(sortedListings.map(listing => [listing.id, listing])).values()));
-    }
-    fetchDataAndSort();
-  }
   React.useEffect(() => {
     const fetchDataAndUpdateState = async () => {
       try {
-        const newData = await fetchAll();
+        const newData = await fetchListings();
         if (JSON.stringify(newData) !== JSON.stringify(previousData)) {
           setPreviousData(newData);
           setForceUpdate(prev => prev + 1);
@@ -170,20 +176,26 @@ export const AllListings = () => {
       } catch (error) {
       }
     }
-    fetchDataAndUpdateState();
-  }, [token, forceUpdate]);
-  console.log(uniqueListings);
-  console.log(myListings);
-  console.log(originalListings);
 
+    const fetchAllListingsAndSetState = async () => {
+      try {
+        const allListingsData = await fetchAllListings();
+        setAllListings(allListingsData);
+      } catch (error) {
+        console.error('Error fetching all listings:', error);
+      }
+    };
+    fetchDataAndUpdateState();
+    fetchAllListingsAndSetState();
+  }, [token, forceUpdate]);
   // search function
   const handleSearch = (searchTerm) => {
+    setSearchTerms([...searchTerms, searchTerm]);
     console.log(searchTerm);
-    setSearchTerms(...searchTerms, searchTerm);
     console.log(listings);
     // when there is no search term search is the way showing all listings
     if (searchTerm.title === '' && !showAdvancedSearch) {
-      setListings(originalListings);
+      setListings(allListings);
     } else if (searchTerm.tile !== '') {
       const filteredListings = originalListings.filter(listing => {
         const suburbMatch = (listing.data.listing.address.Suburb && listing.data.listing.address.Suburb.toLowerCase().includes(searchTerm.title.toLowerCase()))
@@ -217,6 +229,9 @@ export const AllListings = () => {
       }
     }
   };
+  const handleCancelSearch = () => {
+
+  }
 
   const reviewSubmit = async (matchedListing) => {
     console.log(matchedListing);
@@ -248,7 +263,8 @@ export const AllListings = () => {
       <Typography variant="h3" gutterBottom>All Listings</Typography>
       <SearchBox onSearch={handleSearch}
         showAdvancedSearch={showAdvancedSearch}
-        setShowAdvancedSearch={setShowAdvancedSearch} />
+        setShowAdvancedSearch={setShowAdvancedSearch}
+        handleCancelSearch={handleCancelSearch} />
       <div>
         {uniqueListings.length === 0
           ? <p>No listings available</p>
@@ -311,4 +327,4 @@ export const AllListings = () => {
   );
 };
 
-export default AllListings;
+export default AllListingsComponent;

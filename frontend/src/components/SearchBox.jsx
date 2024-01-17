@@ -18,8 +18,8 @@ const getFormattedDate = () => {
   const day = today.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-// create the searchBox
-export const SearchBox = ({ onSearch, showAdvancedSearch, setShowAdvancedSearch }) => {
+// create the searchBox and this component is designed for showing the advanced search area and pack all searching limitations and returned to onsearch fuction, and using it to search
+export const SearchBox = ({ onSearch, showAdvancedSearch, setShowAdvancedSearch, handleCancelSearch }) => {
   const [title, setTitle] = React.useState(''); // title used for both searching title and suburb
   const [bedrooms, setBedrooms] = React.useState(0);
   const [priceRange, setPriceRange] = React.useState([0, 2000]);
@@ -43,6 +43,7 @@ export const SearchBox = ({ onSearch, showAdvancedSearch, setShowAdvancedSearch 
     }
     console.log(title, bedrooms, dateRange, priceRange, sortByRating);
     const searchFilters = { title, bedrooms, dateRange, priceRange, sortByRating };
+    console.log(searchFilters);
     onSearch(searchFilters);
   };
 
@@ -91,6 +92,7 @@ export const SearchBox = ({ onSearch, showAdvancedSearch, setShowAdvancedSearch 
         }}
       />
       <Button color="primary" onClick={() => { setShowAdvancedSearch(!showAdvancedSearch); }}>Advanced Search</Button>
+      <Button color="primary" onClick={() => { handleCancelSearch() }}>Cancel Search</Button>
       {showAdvancedSearch && (
         <div>
           <br />
@@ -111,7 +113,6 @@ export const SearchBox = ({ onSearch, showAdvancedSearch, setShowAdvancedSearch 
             max={10}
             style={{ width: '40vw' }}
           />
-          <br />
           {/* Date range */}
           <form className={dateclasses.container} noValidate style={{ marginTop: '2vh' }}>
             <TextField
