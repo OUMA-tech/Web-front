@@ -8,6 +8,7 @@ const PageList = () => {
   const logout = () => {
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('email');
     navigate('/login');
   }
   return (
@@ -37,6 +38,7 @@ const PageList = () => {
 
     <hr/>
     <Footer />
+
     </>
   );
 }
